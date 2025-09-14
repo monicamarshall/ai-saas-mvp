@@ -10,3 +10,4 @@ camelot-py[cv]
 pytesseract
 opencv-python
 boto3
+httpx>=0.23,<1.0
