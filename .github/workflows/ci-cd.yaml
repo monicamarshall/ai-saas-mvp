@@ -107,29 +107,43 @@ jobs:
           echo "High/Critical vulnerabilities detected by Trivy."
           exit 0  # set to 0 if you want to pass temporarily
 
-  # Update image tag in k8s manifest IN THIS REPO, commit, and push
   update-image-tag-in-k8s-manifest:
     runs-on: ubuntu-latest
     needs: [build_push_docker_image, trivy-image-scan]
 
     steps:
+      - name: Checkout (this repo)
+        uses: actions/checkout@v4
+
+      - name: (debug) show workspace
+        run: |
+          pwd
+          ls -R
+          git status
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Bump image tag in k8s manifest (self-repo)
         run: |
           set -euo pipefail
-          file="${{ env.GITOPS_PATH }}"
-          IMG="${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}"
-          echo "Patching image in $file to $IMG"
-          sed -i "s|image: .*|image: ${IMG}|g" "$file"
+          file="${{ env.GITOPS_PATH }}"              # k8s/deployment.yaml
+          img="${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}"
+          echo "Patching image in $file to $img"
+          sed -i "s|image: .*|image: ${img}|g" "$file"
+
           if git diff --quiet; then
             echo "No changes to commit."
             exit 0
           fi
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add "$file"
-          git commit -m "ai-saas-mvp: set image to ${IMG}"
+          git commit -m "ai-saas-mvp: set image to ${img}"
           git push origin HEAD:main
-  
+
 
 
   
