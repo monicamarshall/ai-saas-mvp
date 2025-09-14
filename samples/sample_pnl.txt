@@ -1,0 +1,4 @@
+Revenue 1000
+COGS 400
+Operating_Expenses 250
+Net_Income 350

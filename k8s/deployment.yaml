@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-saas-mvp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-saas-mvp
+  template:
+    metadata:
+      labels:
+        app: ai-saas-mvp
+    spec:
+      containers:
+        - name: api
+          image: docker.io/monicamarshall/ai-saas-mvp:latest   # e.g., docker.io/monicamarshall/ai-saas-mvp:1
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://postgres:postgres@postgres:5432/mvp"
+            - name: STORAGE_BACKEND
+              value: "local"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-saas-mvp
+spec:
+  type: LoadBalancer
+  selector:
+    app: ai-saas-mvp
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+
+# Optional: Ingress example (requires an ingress controller)
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: ai-saas-mvp
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+# spec:
+#   rules:
+#   - host: mvp.example.com
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: ai-saas-mvp
+#             port:
+#               number: 80

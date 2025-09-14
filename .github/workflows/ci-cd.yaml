@@ -1,0 +1,97 @@
+name: CI/CD - Build, Scan, Self-GitOps Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  IMAGE_REPO: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/ai-saas-mvp
+  IMAGE_TAG: ${{ github.run_number }}
+  FULL_IMAGE: ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
+  GITOPS_PATH: k8s/deployment.yaml   # manifests live in THIS repo
+
+permissions:
+  contents: write          # allow commit to this repo
+  security-events: write
+
+jobs:
+  build_test_scan_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (this repo)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build image
+        run: docker build -t "${{ env.FULL_IMAGE }}" .
+
+      - name: Push image
+        run: docker push "${{ env.FULL_IMAGE }}"
+
+      # Trivy scan to SARIF (upload to Security tab)
+      - name: Trivy scan (SARIF)
+        id: trivy_sarif
+        uses: aquasecurity/trivy-action@0.24.0
+        continue-on-error: true
+        with:
+          image-ref: ${{ env.FULL_IMAGE }}
+          vuln-type: 'os,library'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'      # mark step as failure if findings
+          format: 'sarif'
+          output: 'trivy.sarif'
+          hide-progress: true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+
+      - name: Save SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif
+          path: trivy.sarif
+
+      # Fail AFTER uploading report (optional: enforce gate)
+      - name: Fail if High/Critical vulns were found
+        if: steps.trivy_sarif.outcome == 'failure'
+        run: |
+          echo "High/Critical vulnerabilities detected by Trivy."
+          exit 1
+
+      # Update image tag in k8s manifest IN THIS REPO, commit, and push
+      - name: Bump image tag in k8s manifest (self-repo)
+        run: |
+          set -euo pipefail
+          file="${{ env.GITOPS_PATH }}"
+          echo "Patching image in $file to ${{ env.FULL_IMAGE }}"
+          sed -i "s|image: .*|image: ${{ env.FULL_IMAGE }}|g" "$file"
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$file"
+          git commit -m "ai-saas-mvp: set image to ${{ env.FULL_IMAGE }}"
+          git push origin HEAD:main
