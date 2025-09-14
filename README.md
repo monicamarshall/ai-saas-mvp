@@ -20,3 +20,23 @@ Endpoints:
 
 Kubernetes:
 - See k8s/ for Deployment/Service and Argo CD Application example.
+
+GitHub setup:
+
+cd C:\data\GitOps\ai-saas-mvp_with_ci
+
+# 1) Initialize repo if needed
+git init
+git branch -M main
+
+# 2) Add a .gitignore if you haven’t already
+# (make sure it ignores venv/, storage/, __pycache__/ etc.)
+
+# 3) Commit (skip CI if secrets not set yet)
+git add .
+git commit -m "Initial MVP import [skip ci]"
+
+# 4) Point to GitHub and push
+git remote add origin https://github.com/monicamarshall/ai-saas-mvp.git
+git push -u origin main
+
