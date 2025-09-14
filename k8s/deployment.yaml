@@ -1,21 +1,23 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: ai-saas-mvp
-  namespace: argocd
+  namespace: ai-saas
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/monicamarshall/ai-saas-mvp.git
-    targetRevision: main
-    path: k8s
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: default
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-saas-mvp
+  template:
+    metadata:
+      labels:
+        app: ai-saas-mvp
+    spec:
+      containers:
+      - image: monicamarshall/ai-saas-mvp:15
+        name: ai-saas-mvp-container
+        ports:
+        - containerPort: 8090
 
 
 ---
@@ -23,6 +25,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-saas-mvp
+  namespace: ai-saas
 spec:
   type: LoadBalancer
   selector:
