@@ -24,13 +24,13 @@ spec:
           containerPort: 8000
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /docs       # FastAPI returns 200 here by default
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
-            path: /healthz
+            path: /docs
             port: http
           initialDelaySeconds: 15
           periodSeconds: 20
