@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: ai-saas-mvp-container
-        image: docker.io/monicamarshall/ai-saas-mvp:17
+        image: docker.io/monicamarshall/ai-saas-mvp:18
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
