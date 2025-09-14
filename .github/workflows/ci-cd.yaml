@@ -60,7 +60,7 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Pull image to ensure it exists
-        run: docker pull docker.io/monicamarshall/ai-saas-mvp:${{ env.VERSION }}
+        run: docker pull ${{ env.IMAGE_REPO }}:${{ env.IMAGE_TAG }}
 
       - name: Trivy scan (SARIF)
         id: trivy_sarif
