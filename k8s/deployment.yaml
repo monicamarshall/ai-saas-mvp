@@ -14,7 +14,7 @@ spec:
         app: ai-saas-mvp
     spec:
       containers:
-      - image: monicamarshall/ai-saas-mvp:15
+      - image: docker.io/monicamarshall/ai-saas-mvp:15
         name: ai-saas-mvp-container
         ports:
         - containerPort: 8090
